@@ -1,0 +1,29 @@
+- hosts: all
+  tasks:
+    - name: standard packages
+      package:
+        name: '{{ item }}'
+      register: package
+      until: package is succeeded
+      retries: 3
+      with_items:
+        - docker
+        - git
+
+    - name: docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: docker group
+      group:
+        name: docker
+
+    - name: docker group assignment
+      user:
+        name: ec2-user
+        groups: 'docker'
+        append: yes
+  vars:
+    ansible_become: yes

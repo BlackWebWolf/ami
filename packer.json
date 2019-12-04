@@ -1,0 +1,76 @@
+{
+  "variables": {
+    "gitCommit": null,
+    "awsAccount": null,
+    "subnetNameFilter": null,
+    "vpcNameFilter": null,
+    "sshUsername": "ec2-user",
+    "awsRegion": "eu-central-1",
+    "sourceAmiName": "amazon2-base-2019-??-??T????",
+    "targetAmiName": "ng-docker",
+    "amiUsers": "00000000000"
+  },
+  "builders": [
+    {
+      "ami_description": "Docker AMI",
+      "type": "amazon-ebs",
+      "region": "{{ user `awsRegion` }}",
+      "instance_type": "t3.medium",
+      "ssh_username": "{{ user `sshUsername` }}",
+      "ami_name": "{{ user `targetAmiName` }}-{{ isotime \"2006-01-02T1504\" }}",
+      "ami_users": "{{ user `amiUsers` }}",
+      "snapshot_users": "{{ user `amiUsers` }}",
+      "source_ami_filter": {
+        "filters": {
+          "name": "{{ user `sourceAmiName` }}",
+          "architecture": "x86_64",
+          "root-device-type": "ebs",
+          "virtualization-type": "hvm"
+        },
+        "owners": [
+          "{{ user `awsAccount` }}"
+        ],
+        "most_recent": true
+      },
+      "vpc_filter": {
+        "filters": {
+          "tag:Name": "{{ user `vpcNameFilter` }}",
+          "owner-id": "{{ user `awsAccount` }}",
+          "state": "available"
+        }
+      },
+      "subnet_filter": {
+        "filters": {
+          "owner-id": "{{ user `awsAccount` }}",
+          "state": "available",
+          "tag:Name": "{{ user `subnetNameFilter` }}"
+        },
+        "most_free": true,
+        "random": false
+      },
+      "tags": {
+        "Name": "{{ user `targetAmiName` }}",
+        "Label": "{{ user `targetAmiName` }}",
+        "BaseAMIName": "{{ .SourceAMIName }}",
+        "BuildDate": "{{ isotime }}",
+        "PackerVersion": "{{ packer_version }}",
+        "GitCommit": "{{ user `gitCommit` }}",
+        "CreatedBy": "Packer",
+        "Region": "{{ user `awsRegion` }}"
+      }
+    }
+  ],
+  "post-processors": [
+    {
+      "output": "manifest.json",
+      "strip_path": true,
+      "type": "manifest"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "ansible-local",
+      "playbook_file": "playbook.yaml"
+    }
+  ]
+}
